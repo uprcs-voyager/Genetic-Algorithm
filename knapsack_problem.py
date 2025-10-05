@@ -117,7 +117,7 @@ def run_genetic() :
             if len (populasi_baru) < UKURAN_POPULASI :
                 populasi_baru.append(mutasi(offspring2))
             
-        populasi = populasi_baru
+        populasi = populasi_baru    
     
     return global_best_individual
 
