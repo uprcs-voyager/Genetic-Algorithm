@@ -11,7 +11,6 @@ data_jadwal_clean = []
 
 
 
-
 with open('dataset/Jadwal Kuliah IF ITK - Detail.csv', mode= 'r') as file :
     
     csvFile = csv.DictReader(file)
@@ -155,39 +154,15 @@ def buat_populasi_awal (ukuran_populasi) :
     return population;
 
 
-peta_semester = {}
-
-for data_mk in daftar_kelas :
-    kode_string = data_mk['Kode_MK']
-    mk_identifier = (data_mk['Kode_MK'], data_mk['Mata_Kuliah'], data_mk['Kelas'])
-
-    if 'IF' in kode_string :
-        semester  = kode_string[-3]
-        peta_semester[mk_identifier] = semester
-    else :
-        peta_semester[mk_identifier] = 'MKU'
-
-
-
-
-
-def fitness_function(kromosom_individu, peta_semester) :
+def fitness_function(kromosom_individu) :
     jumlah_tabrakan = 0
     catatan_duplikat_dosen = set()
     catatan_duplikat_ruangan = set()
-    catatan_duplikat_mahasiswa = set()
 
     for gen in kromosom_individu :
-        pengenal_kelas = (gen['Kode_MK'], gen['Mata_Kuliah'], gen['Kelas'])
-        semester = peta_semester[pengenal_kelas]
         gen_identifier1 = (gen['Dosen'], gen['Hari'], gen['Sesi'])
         gen_identifier2 = (gen['Ruangan'], gen['Hari'], gen['Sesi'])
-        gen_identifier3 = (semester, gen['Hari'], gen['Sesi'])
-        
-        
-
-        
-
+    
         if gen_identifier1 not in catatan_duplikat_dosen :
             catatan_duplikat_dosen.add(gen_identifier1)
         else :
@@ -197,12 +172,6 @@ def fitness_function(kromosom_individu, peta_semester) :
             catatan_duplikat_ruangan.add(gen_identifier2)
         else :
             jumlah_tabrakan +=1
-
-        if gen_identifier3 not in catatan_duplikat_mahasiswa :
-            catatan_duplikat_mahasiswa.add(gen_identifier3)
-        else :
-            jumlah_tabrakan +=1
-
     return jumlah_tabrakan
     
 
@@ -214,10 +183,8 @@ kromosom_pertama = membuat_kromosom_acak(semua_dosen, daftar_kelas, semua_ruanga
 ukuran_populasi = 100;
 populasi = buat_populasi_awal(ukuran_populasi)
 
-fitness_score = []
 for kromosom in populasi :
-    skor_tabrakan = fitness_function(kromosom, peta_semester)
-    fitness_score.append(skor_tabrakan)
+    skor_tabrakan = fitness_function(kromosom)
     print(f"Jadwal/Kromosom ini memiliki jumlah tabrakan sebanyak: {skor_tabrakan}")
 
 
