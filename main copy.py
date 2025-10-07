@@ -43,7 +43,19 @@ with open('dataset/Jadwal Kuliah IF ITK - Detail.csv', mode= 'r') as file :
                         sesi_uncleaned = sesi.replace(",","")
                         sesi_cleaned = sesi_uncleaned.strip()
                       
-     
+                        # print(f"Dosen: {dosen_cleaned}")
+                        # print(f"Hari: {day} || index {day_index} ||")
+                        # print(f"Sesi: {sesi_cleaned}")
+                        # print(f"Ruangan: {replace_room_cleaned}\n")
+
+                        # Dictionary
+
+                                           # print(f"Dosen: {dosen_cleaned}")
+                        # print(f"Hari: {day} || index {day_index} ||")
+                        # print(f"Sesi: {sesi_cleaned}")
+                        # print(f"Ruangan: {replace_room_cleaned}\n")
+
+                        # Dictionary
                         dictionary = {
                              'Kode_MK': '',
                              'Mata_Kuliah': '',
@@ -65,7 +77,21 @@ with open('dataset/Jadwal Kuliah IF ITK - Detail.csv', mode= 'r') as file :
                         data_jadwal_clean.append(dictionary)
 
                         break;
+    #     print(parts) 
+    
 
+    #     print(lines)
+    #     print('\n')
+    # print(data_jadwal_clean)
+    # print('\n')
+
+        #     print(parts) 
+    
+
+    #     print(lines)
+    #     print('\n')
+    # print(data_jadwal_clean)
+    # print('\n')
 
 daftar_kelas = []
 kelas_yang_sudah_dicatat = set()
@@ -156,7 +182,7 @@ for data_mk in daftar_kelas :
         peta_semester[mk_identifier] = semester
     else :
         grup_MKU = (data_mk['Mata_Kuliah'], data_mk['Kelas'])
-        peta_semester[mk_identifier] = f"MKU_{data_mk['Mata_Kuliah']}_{data_mk['Kelas']}"
+        peta_semester[mk_identifier] = grup_MKU
 
 
 
@@ -168,22 +194,9 @@ def fitness_function(kromosom_individu, peta_semester) :
     catatan_duplikat_ruangan = set()
     catatan_duplikat_mahasiswa = set()
 
-    jadwal_per_hari = {
-        "Senin": [], "Selasa": [], "Rabu": [], "Kamis": [], "Jumat": []
-    }
-
-    sesi_ke_angka = {
-        '07.30 - 10.00': 1,
-        '10.20 - 12.00': 2,
-        '13.00 - 15.30': 3,
-        '15.50 - 17.30': 4,
-    }
-
     for gen in kromosom_individu :
         pengenal_kelas = (gen['Kode_MK'], gen['Mata_Kuliah'], gen['Kelas'])
         semester = peta_semester[pengenal_kelas]
-        if semester is None :
-            continue
         
         
         tanda_dosen = (gen['Dosen'], gen['Hari'], gen['Sesi'])
@@ -204,35 +217,14 @@ def fitness_function(kromosom_individu, peta_semester) :
         else :
             catatan_duplikat_mahasiswa.add(pengenal_mahasiswa)
 
-        nomor_sesi = sesi_ke_angka.get(gen['Sesi'])
-        if nomor_sesi :
-            jadwal_per_hari[gen['Hari']].append(nomor_sesi)
-
-    penalti_hari_aktif = 0
-    penalti_jarak_sesi = 0
-    hari_aktif = 0
-
-    for hari, daftar_sesi in jadwal_per_hari.items() :
-        if not daftar_sesi :
-            continue
-        hari_aktif +=1
-
-        # penalti jarak sesi
-        if len(daftar_sesi) > 1 :
-            daftar_sesi.sort()
-            for i in range (len(daftar_sesi) - 1) :
-                jarak = daftar_sesi[i+1] - daftar_sesi[i]
-                if jarak > 1 :
-                    penalti_jarak_sesi += (jarak - 1)
-    penalti_hari_aktif = hari_aktif
-
-    BOBOT_TABRAKAN = 100
-    BOBOT_HARI_AKTIF = 10
-    BOBOT_JARAK_SESI = 1
-
-    skor_final = (jumlah_tabrakan * BOBOT_TABRAKAN) + \
-                 (penalti_hari_aktif * BOBOT_HARI_AKTIF) + \
-                 (penalti_jarak_sesi * BOBOT_JARAK_SESI)
+    skor_bonus = 0
+    hari_yang_ada_sesi = {gen['Hari'] for gen in kromosom_individu}
+    jumlah_hari_kosong = 5 - len(hari_yang_ada_sesi)
+    skor_bonus += jumlah_hari_kosong*100
+    
+    skor_awal = 1000
+    penalti_tabrakan = 1000
+    skor_final = skor_awal - (jumlah_tabrakan*penalti_tabrakan) + skor_bonus
 
     return skor_final
 
@@ -245,11 +237,11 @@ def seleksi_turnamen (populasi, fitness_score, UKURAN_TURNAMEN) :
         indeks_peserta.append(indeks_acak)
 
     indeks_terbaik = -1
-    skor_terbaik = float('inf')
+    skor_terbaik = float('-inf')
 
     for indeks in indeks_peserta :
         skor = fitness_score[indeks]
-        if skor < skor_terbaik :
+        if skor > skor_terbaik :
             skor_terbaik = skor
             indeks_terbaik = indeks
         
@@ -257,10 +249,10 @@ def seleksi_turnamen (populasi, fitness_score, UKURAN_TURNAMEN) :
     
 
 def crossover(orang_tua1, orang_tua2) :
-    titik_potong = random.randint(1, len(orang_tua1) - 1)
-    
-    anak1 = copy.deepcopy(orang_tua1[:titik_potong]) + copy.deepcopy(orang_tua2[titik_potong:])
-    anak2 = copy.deepcopy(orang_tua2[:titik_potong]) + copy.deepcopy(orang_tua1[titik_potong:])
+    titik_potong = random.randint(1, len(orang_tua1)- 1)
+
+    anak1 = orang_tua1[:titik_potong] + orang_tua2[titik_potong:]
+    anak2 = orang_tua2[:titik_potong] + orang_tua1[titik_potong:]
     return anak1, anak2
 
 
@@ -283,6 +275,105 @@ def mutation(kromosom, semua_dosen, semua_ruangan, semua_sesi, MUTATION_RATE) :
             
     return kromosom
 
+
+
+
+
+
+
+
+
+
+
+# calling the chromosom function
+# print("\n\n\n")
+
+
+# print("\n -------- TEST DRIVE KROMOSOM -------\n")
+# kromosom_pertama = membuat_kromosom_acak(semua_dosen, daftar_kelas, semua_ruangan, semua_sesi)
+
+# populasi = buat_populasi_awal(ukuran_populasi)
+
+# print("\n -------- FITNESS FUNCTION -------\n")
+# fitness_score = []
+# for kromosom in populasi :
+#     skor_tabrakan = fitness_function(kromosom, peta_semester)
+#     fitness_score.append(skor_tabrakan)
+#     print(f"Jadwal/Kromosom ini memiliki jumlah tabrakan sebanyak: {skor_tabrakan}")
+#     print(f"{fitness_score}")
+
+# print("\n -------- PARENTS -------\n")
+
+# orang_tua1 = seleksi_turnamen(populasi, fitness_score, UKURAN_TURNAMEN)
+# orang_tua2 = seleksi_turnamen(populasi, fitness_score, UKURAN_TURNAMEN)
+# print("\n--- Uji Coba Seleksi Turnamen ---")
+# print("Berhasil memilih satu orang tua pemenang turnamen.")
+# pprint.pprint(f"\nORANG TUA 1{orang_tua1}")
+# pprint.pprint(f"\nORANG TUA 2{orang_tua2}")  
+
+# print("\n -------- CROSSOVER-------\n")
+# anak1, anak2 = crossover(orang_tua1, orang_tua2)
+# print(f"\nAnak 1: {anak1}")
+# print(f"\nAnak 2: {anak2}")
+
+
+# print("\n -------- MUTATION-------\n")
+# mutation = mutation(anak1, semua_dosen, semua_ruangan,  semua_sesi, MUTATION_RATE)
+# print(f"\nTHE MUTATION: {mutation}")
+# # pprint.pprint(kromosom_pertama)
+
+# print(f"the first kromosom with {len(kromosom_pertama)} gen (jadwal kelas)")
+
+# calling the chromosom function
+# print("\n\n\n")
+
+
+# print("\n -------- TEST DRIVE KROMOSOM -------\n")
+# kromosom_pertama = membuat_kromosom_acak(semua_dosen, daftar_kelas, semua_ruangan, semua_sesi)
+
+# populasi = buat_populasi_awal(ukuran_populasi)
+
+# print("\n -------- FITNESS FUNCTION -------\n")
+# fitness_score = []
+# for kromosom in populasi :
+#     skor_tabrakan = fitness_function(kromosom, peta_semester)
+#     fitness_score.append(skor_tabrakan)
+#     print(f"Jadwal/Kromosom ini memiliki jumlah tabrakan sebanyak: {skor_tabrakan}")
+#     print(f"{fitness_score}")
+
+# print("\n -------- PARENTS -------\n")
+
+# orang_tua1 = seleksi_turnamen(populasi, fitness_score, UKURAN_TURNAMEN)
+# orang_tua2 = seleksi_turnamen(populasi, fitness_score, UKURAN_TURNAMEN)
+# print("\n--- Uji Coba Seleksi Turnamen ---")
+# print("Berhasil memilih satu orang tua pemenang turnamen.")
+# pprint.pprint(f"\nORANG TUA 1{orang_tua1}")
+# pprint.pprint(f"\nORANG TUA 2{orang_tua2}")  
+
+# print("\n -------- CROSSOVER-------\n")
+# anak1, anak2 = crossover(orang_tua1, orang_tua2)
+# print(f"\nAnak 1: {anak1}")
+# print(f"\nAnak 2: {anak2}")
+
+
+# print("\n -------- MUTATION-------\n")
+# mutation = mutation(anak1, semua_dosen, semua_ruangan,  semua_sesi, MUTATION_RATE)
+# print(f"\nTHE MUTATION: {mutation}")
+# # pprint.pprint(kromosom_pertama)
+
+# print(f"the first kromosom with {len(kromosom_pertama)} gen (jadwal kelas)")
+    # if skor_terbaik_global == 0:
+    #     print("\nSolusi optimal (0 tabrakan) ditemukan!")
+    #     break
+
+
+# skor_fitness_final = []
+# for kromosom in population:
+#     skor_fitness_final.append(fitness_function(kromosom, peta_semester))
+
+# indeks_final_terbaik = skor_fitness_final.index(min(skor_fitness_final))
+# kromosom_terbaik = population[indeks_final_terbaik]
+
 GENERATION = 120;
 ukuran_populasi = 500;
 UKURAN_TURNAMEN = 50;
@@ -290,26 +381,23 @@ MUTATION_RATE = 0.08;
 
 # variable pelacak player global
 kromosom_terbaik_global = None
-skor_terbaik_global = float('inf')
+skor_terbaik_global = float('-inf')
 
 population = buat_populasi_awal(ukuran_populasi)
 
 for i in range(GENERATION) :
     fitness_score = [fitness_function(kromosom, peta_semester) for kromosom in population]
-    # print(f"{fitness_score}")
-    skor_terbaik_generasi_ini = min(fitness_score) 
-
-    if skor_terbaik_generasi_ini < skor_terbaik_global :
+    skor_terbaik_generasi_ini = max(fitness_score) 
+    if skor_terbaik_generasi_ini > skor_terbaik_global :
         skor_terbaik_global = skor_terbaik_generasi_ini
         indeks_terbaik = fitness_score.index(skor_terbaik_global)
-
-        kromosom_terbaik_global = copy.deepcopy(population[indeks_terbaik])
+        kromosom_terbaik_global = population[indeks_terbaik]
     
     populasi_baru = []
     # ELITISME
     if kromosom_terbaik_global :
-        populasi_baru.append(copy.deepcopy(kromosom_terbaik_global))
-        
+        populasi_baru.append(kromosom_terbaik_global)
+
     while len(populasi_baru) < ukuran_populasi :
         orang_tua1 = seleksi_turnamen(population, fitness_score, UKURAN_TURNAMEN)
         orang_tua2 = seleksi_turnamen(population, fitness_score, UKURAN_TURNAMEN)
@@ -327,12 +415,22 @@ for i in range(GENERATION) :
     population = populasi_baru
 
 
-    skor_terbaik_generasi_ini = min(fitness_score)
-    print(f"Generasi {i+1} | Skor penalti Terbaik Sejauh Ini: {skor_terbaik_global}")
+    skor_terbaik_generasi_ini = max(fitness_score)
+    print(f"Generasi {i+1} | Skor fitness Terbaik Sejauh Ini: {skor_terbaik_global}")
+
+    # if skor_terbaik_global == 0:
+    #     print("\nSolusi optimal (0 tabrakan) ditemukan!")
+    #     break
 
 
+# skor_fitness_final = []
+# for kromosom in population:
+#     skor_fitness_final.append(fitness_function(kromosom, peta_semester))
 
-print("\n--- EVOLUTION RESULT ---")
+# indeks_final_terbaik = skor_fitness_final.index(min(skor_fitness_final))
+# kromosom_terbaik = population[indeks_final_terbaik]
+
+print("\n--- HASIL AKHIR SETELAH EVOLUSI ---")
 print(f"Jadwal terbaik memiliki {skor_terbaik_global} skor fitness.")
 pprint.pprint(kromosom_terbaik_global)
 
